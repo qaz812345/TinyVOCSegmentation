@@ -10,8 +10,7 @@ Modify by Yu Jou Chen
 
 ------------------------------------------------------------
 
-Usage: import the module (see Jupyter notebooks for examples), or run from
-       the command line as such:
+Usage: import the module, or run from the command line as such:
 
     # Train a new model starting from pre-trained COCO weights
     python3 tinyvoc.py train --dataset=/path/to/tinyvoc/dataset --weights=coco
@@ -58,10 +57,10 @@ COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 # through the command line argument --logs
 DEFAULT_LOGS_DIR = "logs"
 
+
 ############################################################
 #  Configurations
 ############################################################
-
 
 class VOCConfig(Config):
     """Configuration for training on the toy  dataset.
@@ -88,7 +87,6 @@ class VOCConfig(Config):
     # padded with zeros to make it a square so multiple images can be put
     # in one batch.
     IMAGE_MIN_DIM = 256
-    
     IMAGE_MAX_DIM = 512
 
     # We use a GPU with 12GB memory, which can fit two images.
@@ -113,19 +111,20 @@ class VOCConfig(Config):
 ############################################################
 
 class VOCDataset(utils.Dataset):
-
     def load_voc(self, dataset_dir, subset):
         """Load a subset of the VOC dataset.
         dataset_dir: Root directory of the dataset.
         subset: Subset to load: train or val
         """
+        # Load label file
         self.voc = COCO(os.path.join(dataset_dir, "pascal_train.json"))
+
         # Add classes.
         for i in range(1, len(self.voc.cats)+1):
             self.add_class('voc', self.voc.cats[i]['id'], self.voc.cats[i]['name'])
 
         # Train or validation dataset?
-        assert subset in ["train", "val", "test"]
+        assert subset in ["train", "val"]
         dataset_dir = os.path.join(dataset_dir, subset)
 
         # Load annotations
@@ -157,17 +156,17 @@ class VOCDataset(utils.Dataset):
             self.add_image(
                 'voc',
                 image_id=anno['file_name'],
-                id=anno['id'],  # use file name as a unique image id
+                id=anno['id'],
                 path=image_path,
                 width=anno['width'],
                 height=anno['height'])
 
     def load_mask(self, image_id):
         """Generate instance masks for an image.
-       Returns:
-        masks: A bool array of shape [height, width, instance count] with
-            one mask per instance.
-        class_ids: a 1D array of class IDs of the instance masks.
+        Returns:
+            masks: A bool array of shape [height, width, instance count] with
+                one mask per instance.
+            class_ids: a 1D array of class IDs of the instance masks.
         """
         # Use the imgIds to find all instance ids of the image
         img_info = self.image_info[image_id]
@@ -175,7 +174,6 @@ class VOCDataset(utils.Dataset):
         anns = self.voc.loadAnns(ann_ids)
         
         # [height, width, instance_count]
-        
         masks = np.zeros([img_info["height"], img_info["width"], len(ann_ids)], dtype=np.uint8)
         classes = []
 
@@ -195,9 +193,8 @@ class VOCDataset(utils.Dataset):
             super(self.__class__, self).image_reference(image_id)
 
     def annToRLE(self, ann, height, width):
-        """
-        Convert annotation which can be polygons, uncompressed RLE to RLE.
-        :return: binary mask (numpy 2D array)
+        """Convert annotation which can be polygons, uncompressed RLE to RLE.
+        Return: binary mask: numpy 2D array
         """
         segm = ann['segmentation']
         if isinstance(segm, list):
@@ -214,9 +211,8 @@ class VOCDataset(utils.Dataset):
         return rle
 
     def annToMask(self, ann, height, width):
-        """
-        Convert annotation which can be polygons, uncompressed RLE, or RLE to binary mask.
-        :return: binary mask (numpy 2D array)
+        """Convert annotation which can be polygons, uncompressed RLE, or RLE to binary mask.
+        Return: binary mask (numpy 2D array)
         """
         rle = self.annToRLE(ann, height, width)
         m = maskUtils.decode(rle)
@@ -286,6 +282,7 @@ def train(model):
                 epochs=80,
                 layers='all',
                 augmentation=augmentation)
+
 
 ############################################################
 #  VOC Test
@@ -375,11 +372,11 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
 def detect(model, dataset_dir, save_dir='logs/dection'):
     # Run model detection
     # Load test dataset
-    vocGt = COCO(os.path.join(dataset_dir, 'test.json'))
+    voc_test = COCO(os.path.join(dataset_dir, 'test.json'))
     voc_dt = []
     # Read image
     for imgid in vocGt.imgs:
-        image = cv2.imread(os.path.join(dataset_dir, "test", vocGt.loadImgs(ids=imgid)[0]['file_name']))[:,:,::-1] # load image
+        image = cv2.imread(os.path.join(dataset_dir, "test", voc_test.loadImgs(ids=imgid)[0]['file_name']))[:,:,::-1] # load image
         # Detect objects
         result = model.detect([image], verbose=1)[0]
         masks, categories, scores = result['masks'], result['class_ids'], result['scores']
@@ -396,12 +393,13 @@ def detect(model, dataset_dir, save_dir='logs/dection'):
 
         # Save output images
         splash = color_splash(image, result['masks'])
-        file_name = vocGt.loadImgs(ids=imgid)[0]['file_name']
+        file_name = voc_test.loadImgs(ids=imgid)[0]['file_name']
         save_path = "{}/splash_{}.png".format(save_dir, file_name)
         skimage.io.imsave(save_path, splash)
     
-    with open("submission.json", "w") as f:
+    with open("{}/submission.json".format(save_dir), "w") as f:
         json.dump(voc_dt, f)
+
 
 ############################################################
 #  Training
@@ -409,10 +407,8 @@ def detect(model, dataset_dir, save_dir='logs/dection'):
 
 if __name__ == '__main__':
     import argparse
-
     # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        description='Train Mask R-CNN to detect objects.')
+    parser = argparse.ArgumentParser(description='Train Mask R-CNN to detect objects.')
     parser.add_argument("command",
                         metavar="<command>",
                         help="'train', 'test' or 'splash'")
