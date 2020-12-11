@@ -1,6 +1,6 @@
 # TinyVOCSegmentation
 
-This is a task of instance segmentation with Tiny PASCAL VOC dataset. There are 20 object classes in the dataset. We use 1,200 images for training, 149 for validation, and 100 for testing. Use Mask RCNN model from GitHub [1] and train with the weights pre-trained on ImageNet. The highest testing mAP50 can reach 27.19%.
+This is a task of instance segmentation with Tiny PASCAL VOC dataset. There are 20 object classes in the dataset. We use 1,200 images for training, 149 for validation, and 100 for testing. Use Mask RCNN model from GitHub [1] and train with the weights pre-trained on ImageNet. The highest testing mAP50 can reach 40.59%.
 
 # Reproducing Submission
 1.  [Requirement](#Requirement)
@@ -75,10 +75,10 @@ Use ResNet50 as the backbone, and train with weights pre-trained on ImageNet.
 *	Random affine transformations (scale, translate, rotate, shear)
 
 ### Hyperparameters
-*	Epochs = 80
-* Stage 1: Train heads for 40 epochs
-* Stage 2: Fine tune layers from ResNet stage 4 and up for 20 epochs
-* Stage 3: Fine tune all layers for 20 epochs
+*	Epochs = 100
+* Stage 1: Train heads for 30 epochs
+* Stage 2: Fine tune layers from ResNet stage 4 and up for 30 epochs
+* Stage 3: Fine tune all layers for 40 epochs
 
 *	Batch size = 4
 *	Optimizer = SGD (learning rate=0.001, momentum=0.9, weight decay=0.0001)
@@ -86,7 +86,6 @@ Use ResNet50 as the backbone, and train with weights pre-trained on ImageNet.
 * GPU counts = 2
 *	Image min dim = 256
 *	Image max dim = 512
-*	Detection min confidence = 0.9
 
 You can take a look at ```Mask_RCNN/mrcnn/config.py``` for other hyperparameters.
 

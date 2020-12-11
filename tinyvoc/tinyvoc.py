@@ -97,10 +97,7 @@ class VOCConfig(Config):
     NUM_CLASSES = 1 + 20  # Background + 20 object classes
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100
-
-    # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0.9
+    STEPS_PER_EPOCH = 1000
 
     # ROIs kept after tf.nn.top_k and before non-maximum suppression
     PRE_NMS_LIMIT = 3000
@@ -261,7 +258,7 @@ def train(model):
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=40,
+                epochs=30,
                 layers='heads',
                 augmentation=augmentation)
 
@@ -279,7 +276,7 @@ def train(model):
     print("Fine tune all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE / 100,
-                epochs=80,
+                epochs=100,
                 layers='all',
                 augmentation=augmentation)
 
